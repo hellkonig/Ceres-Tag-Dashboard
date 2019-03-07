@@ -23,34 +23,38 @@ def create_time_series(df_time):
                             x = df_time.date, 
                             y = df_time.vsolar, 
                             mode = 'lines+markers',
-                            name = 'Solar Voltage',
                         )
     trace2 = go.Scatter(
                             x = df_time.date, 
                             y = df_time.vbatt, 
                             mode = 'lines+markers',
-                            name = 'Battery Volrage'
                         )
     trace3 = go.Scatter(
                             x = df_time.date, 
                             y = df_time.degC, 
                             mode = 'lines+markers',
-                            name = 'Temparature (C)'
                         )
     trace4 = go.Scatter(
                             x = df_time.date, 
                             y = df_time.Δd, 
                             mode = 'lines+markers',
-                            name = r'$\Delta$ Distance (m)'
                         )
-    fig = tools.make_subplots(rows=3, cols=1, specs=[[{}], [{}], [{}]],
+    fig = tools.make_subplots(rows=4, cols=1, specs=[[{}], [{}], [{}], [{}]],
                           shared_xaxes=True, 
                           vertical_spacing=0.1)
-    fig.append_trace(trace1, 3, 1)
+
+    fig.append_trace(trace1, 4, 1)
     fig.append_trace(trace2, 3, 1)
     fig.append_trace(trace3, 2, 1)
     fig.append_trace(trace4, 1, 1)
-    fig['layout'].update()
+
+    fig['layout']['yaxis1'].update(title='Solar Valtage')
+    fig['layout']['yaxis2'].update(title='Battery Valtage')
+    fig['layout']['yaxis3'].update(title='Temparature (C)')
+    fig['layout']['yaxis4'].update(title=r'$\Delta$ Distance (m)')
+
+    fig['layout'].update(showlegend=False, height=800)
+
     return fig
 
 # transmission status 
@@ -110,13 +114,13 @@ app.layout = html.Div([
     html.Div([
         
         html.Div([
-            html.H5('Ceres Tag Smart Digital Ear Tag Report'),
-            html.H6('James Cook University & CSIRO', style=dict(color='#7F90AC')),
+            html.H4('Ceres Tag Smart Digital Ear Tag Report'),
+            html.H5('James Cook University & CSIRO', style=dict(color='#7F90AC')),
         ], className = "nine columns padded" ),
 
         html.Div([
             html.H1('TAG'),
-            html.H6([html.Span('36000', style=dict(opacity=0.5)), html.Span(id='tag-id')])
+            html.H5([html.Span('36000', style=dict(opacity=0.5)), html.Span(id='tag-id')])
         ], className = "three columns gs-header gs-accent-header padded", style=dict(float='right') ),
         
     ], className = "row gs-header gs-text-header"),
@@ -127,27 +131,24 @@ app.layout = html.Div([
 
         html.Div([
 
-            #html.Img(src='data:image/png;base64,{}'.format(encoded_image)),
+            html.Img(id = 'cow-img'),
+
+        ], className = "four columns" ),
+
+        html.Div([
+
             html.Div([
                 dcc.Graph( 
                     id='map-track',
                 )
             ])
 
-        ], className = "three columns" ),
-
-        html.Div([
-            dcc.Graph(
-                id='time-series'
-            )
-
-
-        ], className = "six columns" ),
+        ], className = "four columns" ),
 
         html.Div([
 
-            html.H6('Control Panel', className = "gs-header gs-text-header padded"),
-            html.Label('Select Tag'),
+            html.H5('Control Panel', className = "gs-header gs-text-header padded"),
+            html.Label('Select Tag', style={'fontSize': 15}),
             dcc.Dropdown(
                 id='dropdown-tag',
                 options = [
@@ -161,28 +162,54 @@ app.layout = html.Div([
                     {'label': '3600077', 'value': '3600077'},
                     {'label': '3600080', 'value': '3600080'},
                 ],
-                value='3600038'
+                value='3600038',
+                style={'fontSize': 15}
             ),
 
-            html.Label('Start time (YYYY-MM-DD HH:MM:SS)'),
-            dcc.Input(id='start-time', value='2019-02-16 12:00:00', type='text'),
-            html.Label('End time (YYYY-MM-DD HH:MM:SS)'),
+            html.Label('Start time (YYYY-MM-DD HH:MM:SS)', style={'fontSize': 15}),
+            dcc.Input(id='start-time', 
+                      value='2019-02-16 12:00:00', 
+                      type='text', 
+                      style={'fontSize': 15}),
+            html.Label('End time (YYYY-MM-DD HH:MM:SS)', style={'fontSize': 15}),
             dcc.Input(id='end-time', value=str(today.year) + '-'
                                           +str(today.month) + '-'
                                           +str(today.day) + ' '
                                           +str(today.hour) + ':'
                                           +str(today.minute) + ':'
-                                          +str(today.second), type='text'),
+                                          +str(today.second), 
+                      type='text',
+                      style={'fontSize': 15}),
 
-            html.H6('Transmission Status', className = "gs-header gs-text-header padded"),
-            html.Table(id='transmission'),
+            html.H5('Transmission Status', className = "gs-header gs-text-header padded"),
+            html.Table(id='transmission', style={'fontSize': 15}),
 
-        ], className = "three columns" )
+        ], className = "four columns" )
 
-    ], className = "row")
+    ], className = "row"),
 
+    html.Br([]),
+
+    html.Div([
+
+        html.Div([
+            dcc.Graph(
+                id='time-series'
+            )
+
+
+        ], className = "twelve columns" ),
+
+    ], className = "row"),
 ])
 
+
+@app.callback(
+        Output("cow-img", "src"),
+        [Input("dropdown-tag", "value")]
+)
+def update_cow_image(tag_id):
+    return app.get_asset_url('cow_3600038.png')
 
 @app.callback(
         Output('map-track', 'figure'),
@@ -239,7 +266,7 @@ def update_trans_table(tag_id, start_date, end_date):
     total_num_rows = df_full.shape[0]
     total_num_trans = df_full.count()['vsolar']
     df_trans = pd.DataFrame({"A": ["Number of transmissions", "Percentage successful"],
-        "B":[total_num_rows, total_num_trans / total_num_rows]})
+        "B":[total_num_rows, "{0:.2f}%".format(100*total_num_trans / total_num_rows)]})
     return create_dash_table(df_trans)
 
 @app.callback(

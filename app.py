@@ -276,6 +276,7 @@ def update_trans_table(tag_id, start_date, end_date):
 def update_tag_id(tag_id):
     return tag_id[-2:]
 
+application = app.server
 
 if __name__ == '__main__':
     app.run_server(debug=True)
